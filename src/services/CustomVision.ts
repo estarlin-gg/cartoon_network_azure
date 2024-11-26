@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { Data } from "../models";
 
 export class CustomVision {
-  static AnalyzeURL = async (url: string | null): Promise<Data | undefined> => {
+  static AnalyzeURL = async (
+    url: string | null
+  ): Promise<Data | string | undefined> => {
     try {
       const response = await axios.post<Data>(
         import.meta.env.VITE_API_URL,
@@ -15,9 +18,13 @@ export class CustomVision {
         }
       );
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        return "El formato de la imagen no es válido o no se puede procesar.";
+      }
+
       console.log(error);
-      return undefined;
+      return "Hubo un problema al procesar la URL.";
     }
   };
 }

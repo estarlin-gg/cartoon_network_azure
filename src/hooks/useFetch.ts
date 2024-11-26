@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ChangeEvent, useState } from "react";
 import { CustomVision } from "../services/CustomVision";
 import { Data } from "../models";
@@ -17,15 +18,15 @@ export const useFetch = () => {
 
   const HandleFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    console.log(selectedFile);
-
     if (selectedFile) {
-      const validTypes = ["image/jpeg", "image/png", "image/bmp"];
-      if (!validTypes.includes(selectedFile.type)) {
+      if (
+        !["image/jpeg", "image/png", "image/bmp"].includes(selectedFile.type)
+      ) {
         setError("Solo se permiten archivos .jpg, .png o .bmp.");
         setFile(undefined);
         return;
       }
+
       if (selectedFile.size > 4 * 1024 * 1024) {
         setError("El archivo no debe exceder los 4 MB.");
         setFile(undefined);
@@ -34,19 +35,18 @@ export const useFetch = () => {
 
       setError(null);
       setFile(selectedFile);
-
       try {
         setIsLoading(true);
         setResponse(null);
 
         const imageURL = await uploadToCloudinary(selectedFile);
-        setImageUrl(imageURL);
         const res = await CustomVision.AnalyzeURL(imageURL);
-        setResponse(res!);
+        setResponse(res as Data);
+        setImageUrl(imageURL);
         setIsLoading(false);
       } catch (error) {
-        console.log("Error al procesar la imagen:", error);
-        setError("Error al subir la imagen a Cloudinary o al procesarla.");
+        console.log("Error al subir la imagen:", error);
+        setError("Error al subir la imagen.");
         setResponse(null);
       } finally {
         setIsLoading(false);
@@ -59,19 +59,26 @@ export const useFetch = () => {
       setError("La URL no puede estar vacía.");
       return;
     }
+
     try {
       setIsLoading(true);
       setResponse(null);
-      const data = await CustomVision.AnalyzeURL(inputUrl);
-      setResponse(data || null);
-      setImageUrl(inputUrl);
       setError(null);
+
+      const data = await CustomVision.AnalyzeURL(inputUrl);
+
+      if (typeof data === "string") {
+        setError(data);
+      } else {
+        setResponse(data || null);
+        setImageUrl(inputUrl);
+      }
+
       setIsLoading(false);
       console.log(data);
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+      console.log("Error al procesar la URL:", error);
       setError("Hubo un error al procesar la URL.");
-    } finally {
       setIsLoading(false);
     }
   };
